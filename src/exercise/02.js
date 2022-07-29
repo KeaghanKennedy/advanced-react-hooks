@@ -14,6 +14,7 @@ function useSafeDispatch(dispatch) {
   const mountedRef = React.useRef(false)
 
   React.useLayoutEffect(() => {
+    // Set mounted to be true and false on the first mount and unmount respectively. Note the empty dependency array.
     mountedRef.current = true
     return () => {
       mountedRef.current = false
@@ -21,6 +22,7 @@ function useSafeDispatch(dispatch) {
   }, [])
 
   return React.useCallback(
+    // Return memoized version of the dispatch function ONLY if the component is currently mounted.
     (...args) => {
       if (mountedRef.current) {
         dispatch(...args)
@@ -48,6 +50,7 @@ function asyncReducer(state, action) {
 }
 
 function useAsync(initialState) {
+  // Return current state and our 'unsafe dispatch' from our asyncReducer
   const [state, unsafeDispatch] = React.useReducer(asyncReducer, {
     status: 'idle',
     data: null,
@@ -55,11 +58,14 @@ function useAsync(initialState) {
     ...initialState,
   })
 
+  // Get a safe version of our dispatch function.
   const dispatch = useSafeDispatch(unsafeDispatch)
 
   const run = React.useCallback(
     promise => {
+      // Set status to pending,
       dispatch({type: 'pending'})
+      // then resolve the promise given to the run function.
       promise.then(
         data => {
           dispatch({type: 'resolved', data})
@@ -72,6 +78,7 @@ function useAsync(initialState) {
     [dispatch],
   )
 
+  // Return the current reducer state and the run function.
   return {...state, run}
 }
 
